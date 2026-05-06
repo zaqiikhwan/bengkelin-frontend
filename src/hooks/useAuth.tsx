@@ -39,9 +39,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (storedUserType) {
           setUserType(storedUserType);
           
-          // Try to get user profile, but don't fail if endpoint isn't implemented
+          // Try to get user profile to validate token
           try {
-            const response = await apiService.getUserProfile();
+            let response;
+            if (storedUserType === 'users') {
+              response = await apiService.getUserProfile();
+            } else {
+              response = await apiService.getMitraProfile();
+            }
+            
             if (response.success && response.data) {
               if (storedUserType === 'users') {
                 const userData = response.data as any;
@@ -65,35 +71,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   bank_number: mitraData.bank_number
                 });
               }
-            }
-          } catch (profileError) {
-            console.warn('Profile endpoint not available yet, using token-based auth only:', profileError);
-            // Set minimal user data based on stored user type
-            if (storedUserType === 'users') {
-              setUser({
-                id: 'temp-user-id',
-                first_name: 'User',
-                last_name: '',
-                email: 'user@example.com',
-                phone_number: ''
-              });
             } else {
-              setMitra({
-                id: 'temp-mitra-id',
-                first_name: 'Mitra',
-                last_name: '',
-                email: 'mitra@example.com',
-                phone_number: ''
-              });
+              // Profile request failed, token might be invalid
+              throw new Error('Profile request failed');
             }
+          } catch (profileError: any) {
+            console.warn('Profile request failed, clearing invalid token:', profileError);
+            
+            // Clear the auth state for any profile request failure
+            // This ensures invalid tokens are properly handled
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user_type');
+            setUser(null);
+            setMitra(null);
+            setUserType(null);
           }
         }
+      } else {
+        // No token, clear everything
+        setUser(null);
+        setMitra(null);
+        setUserType(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_type');
+      setUser(null);
+      setMitra(null);
+      setUserType(null);
     } finally {
       setIsLoading(false);
     }
@@ -164,6 +172,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('Backend server is not running. Please start the Bengkelin API service.');
       }
       
+      // Handle specific user login error responses
+      if (error.response?.status === 404) {
+        const errorData = error.response.data;
+        throw new Error(errorData?.message || 'User not found');
+      }
+      
+      if (error.response?.status === 401) {
+        const errorData = error.response.data;
+        if (errorData?.errors?.code === 'INVALID_CREDENTIALS') {
+          throw new Error('Invalid email or password');
+        }
+        throw new Error(errorData?.message || 'Invalid credentials');
+      }
+      
+      // Handle other HTTP status codes
+      if (error.response?.status === 400) {
+        const errorData = error.response.data;
+        throw new Error(errorData?.message || 'Invalid request data');
+      }
+      
+      if (error.response?.status >= 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
       throw new Error(error.response?.data?.message || error.message || 'Login failed');
     }
   };
@@ -215,6 +247,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Check if it's a connection refused error
       if (error.message.includes('ECONNREFUSED') || error.message.includes('connect ECONNREFUSED')) {
         throw new Error('Backend server is not running. Please start the Bengkelin API service.');
+      }
+      
+      // Handle specific mitra login error responses
+      if (error.response?.status === 404) {
+        const errorData = error.response.data;
+        if (errorData?.errors?.code === 'MITRA_NOT_FOUND') {
+          throw new Error('Mitra not registered yet. Please register first.');
+        }
+        throw new Error(errorData?.message || 'Mitra not found');
+      }
+      
+      if (error.response?.status === 401) {
+        const errorData = error.response.data;
+        if (errorData?.errors?.code === 'INVALID_CREDENTIALS') {
+          throw new Error('Invalid email or password');
+        }
+        throw new Error(errorData?.message || 'Invalid credentials');
+      }
+      
+      // Handle other HTTP status codes
+      if (error.response?.status === 400) {
+        const errorData = error.response.data;
+        throw new Error(errorData?.message || 'Invalid request data');
+      }
+      
+      if (error.response?.status >= 500) {
+        throw new Error('Server error. Please try again later.');
       }
       
       throw new Error(error.response?.data?.message || error.message || 'Login failed');
@@ -277,11 +336,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setMitra(null);
     setUserType(null);
+    
+    // Force a page reload to clear any cached state
+    window.location.href = '/login';
   };
 
   const refreshUser = async () => {
     try {
-      const response = await apiService.getUserProfile();
+      let response;
+      if (userType === 'users') {
+        response = await apiService.getUserProfile();
+      } else {
+        response = await apiService.getMitraProfile();
+      }
+      
       if (response.success && response.data) {
         if (userType === 'users') {
           const userData = response.data as any;

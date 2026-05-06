@@ -9,18 +9,22 @@ import {
   CameraIcon,
   PhotoIcon
 } from '@heroicons/react/24/outline';
-import type { UserUpdateRequest, AddAddressRequest } from '../types/api';
+import type { UserUpdateRequest } from '../types/api';
 
 interface ProfileFormData extends UserUpdateRequest {
+  // Address fields for users only
   latitude?: number;
   longitude?: number;
   address_label?: string;
   full_address?: string;
   note?: string;
+  // Bank fields for mitras only
+  bank_name?: string;
+  bank_number?: string;
 }
 
 const ProfilePage: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, mitra, userType, refreshUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,20 +34,27 @@ const ProfilePage: React.FC = () => {
   const [success, setSuccess] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Get current profile data based on user type
+  const currentProfile = userType === 'users' ? user : mitra;
+
   // Form state
   const [formData, setFormData] = useState<ProfileFormData>({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    phone_number: user?.phone_number || '',
+    first_name: currentProfile?.first_name || '',
+    last_name: currentProfile?.last_name || '',
+    phone_number: currentProfile?.phone_number || '',
+    // User-specific fields
     latitude: 0,
     longitude: 0,
     address_label: '',
     full_address: '',
-    note: ''
+    note: '',
+    // Mitra-specific fields
+    bank_name: userType === 'mitras' && mitra ? mitra.bank_name || '' : '',
+    bank_number: userType === 'mitras' && mitra ? mitra.bank_number || '' : ''
   });
 
   const handleAvatarImageClick = () => {
-    if (user?.avatar_url) {
+    if (userType === 'users' && user?.avatar_url) {
       setIsImagePreviewOpen(true);
     }
   };
@@ -100,48 +111,65 @@ const ProfilePage: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Fetch complete profile data from GET /users/profile
-      const response = await apiService.getUserProfile();
+      // Fetch complete profile data based on user type
+      let response;
+      if (userType === 'users') {
+        response = await apiService.getUserProfile();
+      } else {
+        response = await apiService.getMitraProfile();
+      }
       
       if (response.success && response.data) {
         const profileData = response.data as any;
         
         // Set form with complete profile data
         setFormData({
-          first_name: profileData.first_name || user?.first_name || '',
-          last_name: profileData.last_name || user?.last_name || '',
-          phone_number: profileData.phone_number || user?.phone_number || '',
-          latitude: profileData.addresses?.[0]?.latitude || 0,
-          longitude: profileData.addresses?.[0]?.longitude || 0,
-          address_label: profileData.addresses?.[0]?.address_label || '',
-          full_address: profileData.addresses?.[0]?.full_address || '',
-          note: profileData.addresses?.[0]?.note || ''
+          first_name: profileData.first_name || currentProfile?.first_name || '',
+          last_name: profileData.last_name || currentProfile?.last_name || '',
+          phone_number: profileData.phone_number || currentProfile?.phone_number || '',
+          // User-specific address fields
+          latitude: userType === 'users' ? ((profileData as any).addresses?.[0]?.latitude || 0) : 0,
+          longitude: userType === 'users' ? ((profileData as any).addresses?.[0]?.longitude || 0) : 0,
+          address_label: userType === 'users' ? ((profileData as any).addresses?.[0]?.address_label || '') : '',
+          full_address: userType === 'users' ? ((profileData as any).addresses?.[0]?.full_address || '') : '',
+          note: userType === 'users' ? ((profileData as any).addresses?.[0]?.note || '') : '',
+          // Mitra-specific bank fields
+          bank_name: userType === 'mitras' ? (profileData.bank_name || '') : '',
+          bank_number: userType === 'mitras' ? (profileData.bank_number || '') : ''
         });
       } else {
         // Fallback to basic user data if profile endpoint fails
         setFormData({
-          first_name: user?.first_name || '',
-          last_name: user?.last_name || '',
-          phone_number: user?.phone_number || '',
+          first_name: currentProfile?.first_name || '',
+          last_name: currentProfile?.last_name || '',
+          phone_number: currentProfile?.phone_number || '',
+          // User-specific fields
           latitude: 0,
           longitude: 0,
           address_label: '',
           full_address: '',
-          note: ''
+          note: '',
+          // Mitra-specific fields
+          bank_name: userType === 'mitras' && mitra ? mitra.bank_name || '' : '',
+          bank_number: userType === 'mitras' && mitra ? mitra.bank_number || '' : ''
         });
       }
     } catch (error) {
       console.warn('Failed to fetch profile data, using basic user data:', error);
       // Fallback to basic user data
       setFormData({
-        first_name: user?.first_name || '',
-        last_name: user?.last_name || '',
-        phone_number: user?.phone_number || '',
+        first_name: currentProfile?.first_name || '',
+        last_name: currentProfile?.last_name || '',
+        phone_number: currentProfile?.phone_number || '',
+        // User-specific fields
         latitude: 0,
         longitude: 0,
         address_label: '',
         full_address: '',
-        note: ''
+        note: '',
+        // Mitra-specific fields
+        bank_name: userType === 'mitras' && mitra ? mitra.bank_name || '' : '',
+        bank_number: userType === 'mitras' && mitra ? mitra.bank_number || '' : ''
       });
     } finally {
       setIsLoading(false);
@@ -170,65 +198,106 @@ const ProfilePage: React.FC = () => {
     setSuccess('');
 
     try {
-      // Separate profile data from address data
+      // Separate profile data from address/bank data
       const profileData = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone_number: formData.phone_number
       };
 
-      const addressData = {
-        latitude: formData.latitude || 0,
-        longitude: formData.longitude || 0,
-        address_label: formData.address_label || '',
-        full_address: formData.full_address || '',
-        note: formData.note || ''
-      };
-
       // Update profile first
-      const profileResponse = await apiService.updateUserProfile(profileData);
+      let profileResponse;
+      if (userType === 'users') {
+        profileResponse = await apiService.updateUserProfile(profileData);
+      } else {
+        profileResponse = await apiService.updateMitraProfile(profileData);
+      }
       
       if (!profileResponse.success) {
         setError(profileResponse.message || 'Failed to update profile');
         return;
       }
 
-      // Update address if any address fields are provided
-      if (addressData.full_address || addressData.address_label) {
-        try {
-          let addressResponse;
-          
-          // Check if user already has an address by looking at the current profile data
-          const currentProfile = await apiService.getUserProfile();
-          const hasExistingAddress = currentProfile.success && 
-                                   currentProfile.data && 
-                                   currentProfile.data.addresses &&
-                                   currentProfile.data.addresses.length > 0;
-          
-          if (hasExistingAddress) {
-            // User has existing address - update it with ID
-            console.log('Updating existing address with PATCH /users/address/:id');
-            addressResponse = await apiService.updateUserAddress(1, addressData); // Using ID 1 for primary address
-          } else {
-            // User has no address - create/set primary address without ID
-            console.log('Setting primary address with PATCH /users/address');
-            addressResponse = await apiService.setUserPrimaryAddress(addressData);
+      let additionalUpdateMessage = '';
+
+      if (userType === 'users') {
+        // Handle address update for users
+        const addressData = {
+          latitude: formData.latitude || 0,
+          longitude: formData.longitude || 0,
+          address_label: formData.address_label || '',
+          full_address: formData.full_address || '',
+          note: formData.note || ''
+        };
+
+        // Update address if any address fields are provided
+        if (addressData.full_address || addressData.address_label) {
+          try {
+            let addressResponse;
+            
+            // Check if user already has an address by looking at the current profile data
+            let currentProfile;
+            currentProfile = await apiService.getUserProfile();
+            
+            const hasExistingAddress = currentProfile.success && 
+                                     currentProfile.data && 
+                                     (currentProfile.data as any).addresses &&
+                                     (currentProfile.data as any).addresses.length > 0;
+            
+            if (hasExistingAddress) {
+              // User has existing address - update it with ID
+              console.log('Updating existing address with PATCH /users/address/:id');
+              addressResponse = await apiService.updateUserAddress(1, addressData); // Using ID 1 for primary address
+            } else {
+              // User has no address - create/set primary address without ID
+              console.log('Setting primary address with PATCH /users/address');
+              addressResponse = await apiService.setUserPrimaryAddress(addressData);
+            }
+            
+            if (!addressResponse.success) {
+              console.warn('Address update failed, but profile was updated:', addressResponse.message);
+              additionalUpdateMessage = ' (Address update failed)';
+            }
+          } catch (addressError) {
+            console.warn('Address endpoint not implemented yet:', addressError);
+            additionalUpdateMessage = ' (Address management coming soon)';
           }
-          
-          if (!addressResponse.success) {
-            console.warn('Address update failed, but profile was updated:', addressResponse.message);
-            setSuccess('Profile updated successfully! (Address update failed)');
-          } else {
-            setSuccess('Profile and address updated successfully!');
-          }
-        } catch (addressError) {
-          console.warn('Address endpoint not implemented yet:', addressError);
-          setSuccess('Profile updated successfully! (Address management coming soon)');
         }
       } else {
-        setSuccess('Profile updated successfully!');
+        // Handle bank information update for mitras
+        const bankData = {
+          bank_name: formData.bank_name || '',
+          bank_number: formData.bank_number || ''
+        };
+
+        // Update bank information if provided
+        if (bankData.bank_name && bankData.bank_number) {
+          try {
+            let bankResponse;
+            
+            // Check if mitra already has bank info
+            const hasBankInfo = mitra?.bank_name && mitra?.bank_number;
+            
+            if (hasBankInfo) {
+              // Update existing bank account
+              bankResponse = await apiService.updateMitraBank(bankData);
+            } else {
+              // Create new bank account
+              bankResponse = await apiService.addMitraBank(bankData);
+            }
+            
+            if (!bankResponse.success) {
+              console.warn('Bank update failed, but profile was updated:', bankResponse.message);
+              additionalUpdateMessage = ' (Bank update failed)';
+            }
+          } catch (bankError) {
+            console.warn('Bank update failed:', bankError);
+            additionalUpdateMessage = ' (Bank update failed)';
+          }
+        }
       }
 
+      setSuccess(`Profile updated successfully!${additionalUpdateMessage}`);
       await refreshUser(); // Refresh user data in context
       
       // Close modal after a short delay
@@ -248,8 +317,8 @@ const ProfilePage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Profile</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Profile</h1>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
             Manage your account information and preferences.
           </p>
         </div>
@@ -272,7 +341,7 @@ const ProfilePage: React.FC = () => {
         <div className="card">
           <div className="flex items-center space-x-4 mb-6">
             <div className="relative">
-              {user?.avatar_url ? (
+              {userType === 'users' && user?.avatar_url ? (
                 <div className="relative group">
                   <img
                     src={user.avatar_url}
@@ -303,24 +372,26 @@ const ProfilePage: React.FC = () => {
               {/* Fallback avatar - always present but hidden if image loads */}
               <div 
                 className="h-16 w-16 bg-primary-100 rounded-full flex items-center justify-center border-2 border-gray-200"
-                style={{ display: user?.avatar_url ? 'none' : 'flex' }}
+                style={{ display: (userType === 'users' && user?.avatar_url) ? 'none' : 'flex' }}
               >
                 <UserIcon className="h-8 w-8 text-primary-600" />
               </div>
               
-              {/* Avatar Upload Button */}
-              <button
-                onClick={handleAvatarClick}
-                disabled={isUploadingAvatar}
-                className="absolute -bottom-1 -right-1 h-6 w-6 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Change avatar"
-              >
-                {isUploadingAvatar ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
-                ) : (
-                  <CameraIcon className="h-3 w-3" />
-                )}
-              </button>
+              {/* Avatar Upload Button - Only show for users, not mitras */}
+              {userType === 'users' && (
+                <button
+                  onClick={handleAvatarClick}
+                  disabled={isUploadingAvatar}
+                  className="absolute -bottom-1 -right-1 h-6 w-6 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Change avatar"
+                >
+                  {isUploadingAvatar ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
+                  ) : (
+                    <CameraIcon className="h-3 w-3" />
+                  )}
+                </button>
+              )}
               
               {/* Hidden file input */}
               <input
@@ -332,32 +403,63 @@ const ProfilePage: React.FC = () => {
               />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                {user?.first_name} {user?.last_name}
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {currentProfile?.first_name} {currentProfile?.last_name}
               </h2>
-              <p className="text-gray-500">Customer</p>
+              <p className="text-gray-500">{userType === 'users' ? 'Customer' : 'Mitra'}</p>
               <p className="text-xs text-gray-400 mt-1">
-                {user?.avatar_url ? 'Click image to preview • Click camera to change' : 'Click camera icon to change avatar'}
+                {userType === 'users' 
+                  ? (user?.avatar_url ? 'Click image to preview • Click camera to change' : 'Click camera icon to change avatar')
+                  : 'Mitra profile - Avatar managed via Bengkel Management'
+                }
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+              <EnvelopeIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Email</p>
-                <p className="text-sm text-gray-500">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Email</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{currentProfile?.email}</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              <PhoneIcon className="h-5 w-5 text-gray-400" />
+              <PhoneIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Phone</p>
-                <p className="text-sm text-gray-500">{user?.phone_number}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Phone</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{currentProfile?.phone_number}</p>
               </div>
             </div>
+
+            {/* Show bank information for mitras */}
+            {userType === 'mitras' && mitra && (
+              <>
+                {mitra.bank_name && (
+                  <div className="flex items-center space-x-3">
+                    <div className="h-5 w-5 flex items-center justify-center">
+                      <span className="text-gray-400 text-sm">🏦</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Bank Name</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{mitra.bank_name}</p>
+                    </div>
+                  </div>
+                )}
+                {mitra.bank_number && (
+                  <div className="flex items-center space-x-3">
+                    <div className="h-5 w-5 flex items-center justify-center">
+                      <span className="text-gray-400 text-sm">#</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Bank Number</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{mitra.bank_number}</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200">
@@ -374,10 +476,10 @@ const ProfilePage: React.FC = () => {
 
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Edit Profile</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Edit Profile</h3>
               <button
                 onClick={handleCloseModal}
                 className="text-gray-400 hover:text-gray-600"
@@ -448,84 +550,126 @@ const ProfilePage: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label htmlFor="address_label" className="block text-sm font-medium text-gray-700">
-                  Address Label
-                </label>
-                <input
-                  type="text"
-                  id="address_label"
-                  name="address_label"
-                  value={formData.address_label || ''}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  placeholder="e.g., Home, Office"
-                />
-              </div>
+              {/* Bank fields for mitras */}
+              {userType === 'mitras' && (
+                <>
+                  <div>
+                    <label htmlFor="bank_name" className="block text-sm font-medium text-gray-700">
+                      Bank Name
+                    </label>
+                    <input
+                      type="text"
+                      id="bank_name"
+                      name="bank_name"
+                      value={formData.bank_name || ''}
+                      onChange={handleInputChange}
+                      className="input-field"
+                      placeholder="e.g., Bank BCA, Bank Mandiri"
+                    />
+                  </div>
 
-              <div>
-                <label htmlFor="full_address" className="block text-sm font-medium text-gray-700">
-                  Full Address
-                </label>
-                <textarea
-                  id="full_address"
-                  name="full_address"
-                  rows={3}
-                  value={formData.full_address || ''}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  placeholder="Enter your full address"
-                />
-              </div>
+                  <div>
+                    <label htmlFor="bank_number" className="block text-sm font-medium text-gray-700">
+                      Bank Account Number
+                    </label>
+                    <input
+                      type="text"
+                      id="bank_number"
+                      name="bank_number"
+                      value={formData.bank_number || ''}
+                      onChange={handleInputChange}
+                      className="input-field"
+                      placeholder="Enter your bank account number"
+                      pattern="[0-9]{10,20}"
+                      title="Bank account number should be 10-20 digits"
+                    />
+                  </div>
+                </>
+              )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="latitude" className="block text-sm font-medium text-gray-700">
-                    Latitude
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    id="latitude"
-                    name="latitude"
-                    value={formData.latitude || 0}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="e.g., -6.2088"
-                  />
-                </div>
+              {/* Address fields for users only */}
+              {userType === 'users' && (
+                <>
+                  <div>
+                    <label htmlFor="address_label" className="block text-sm font-medium text-gray-700">
+                      Address Label
+                    </label>
+                    <input
+                      type="text"
+                      id="address_label"
+                      name="address_label"
+                      value={formData.address_label || ''}
+                      onChange={handleInputChange}
+                      className="input-field"
+                      placeholder="e.g., Home, Office"
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="longitude" className="block text-sm font-medium text-gray-700">
-                    Longitude
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    id="longitude"
-                    name="longitude"
-                    value={formData.longitude || 0}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="e.g., 106.8456"
-                  />
-                </div>
-              </div>
+                  <div>
+                    <label htmlFor="full_address" className="block text-sm font-medium text-gray-700">
+                      Full Address
+                    </label>
+                    <textarea
+                      id="full_address"
+                      name="full_address"
+                      rows={3}
+                      value={formData.full_address || ''}
+                      onChange={handleInputChange}
+                      className="input-field"
+                      placeholder="Enter your full address"
+                    />
+                  </div>
 
-              <div>
-                <label htmlFor="note" className="block text-sm font-medium text-gray-700">
-                  Note
-                </label>
-                <textarea
-                  id="note"
-                  name="note"
-                  rows={2}
-                  value={formData.note || ''}
-                  onChange={handleInputChange}
-                  className="input-field"
-                  placeholder="Additional notes (optional)"
-                />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="latitude" className="block text-sm font-medium text-gray-700">
+                        Latitude
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        id="latitude"
+                        name="latitude"
+                        value={formData.latitude || 0}
+                        onChange={handleInputChange}
+                        className="input-field"
+                        placeholder="e.g., -6.2088"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="longitude" className="block text-sm font-medium text-gray-700">
+                        Longitude
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        id="longitude"
+                        name="longitude"
+                        value={formData.longitude || 0}
+                        onChange={handleInputChange}
+                        className="input-field"
+                        placeholder="e.g., 106.8456"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="note" className="block text-sm font-medium text-gray-700">
+                      Note
+                    </label>
+                    <textarea
+                      id="note"
+                      name="note"
+                      rows={2}
+                      value={formData.note || ''}
+                      onChange={handleInputChange}
+                      className="input-field"
+                      placeholder="Additional notes (optional)"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -549,7 +693,7 @@ const ProfilePage: React.FC = () => {
       )}
 
       {/* Image Preview Modal */}
-      {isImagePreviewOpen && user?.avatar_url && (
+      {isImagePreviewOpen && userType === 'users' && user?.avatar_url && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-4xl max-h-full">
             {/* Close button */}

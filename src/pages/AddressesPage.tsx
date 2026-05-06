@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import type { UserAddress, AddAddressRequest } from '../types/api';
 import { 
@@ -10,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AddressesPage: React.FC = () => {
+  const { userType } = useAuth();
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,8 +37,14 @@ const AddressesPage: React.FC = () => {
   const loadAddresses = async () => {
     try {
       setLoading(true);
-      // Get address information from the user profile endpoint
-      const response = await apiService.getUserProfile();
+      // Get address information from the profile endpoint based on user type
+      let response;
+      if (userType === 'users') {
+        response = await apiService.getUserProfile();
+      } else {
+        response = await apiService.getMitraProfile();
+      }
+      
       if (response.success && response.data) {
         const profileData = response.data as any;
         
@@ -178,8 +186,8 @@ const AddressesPage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">My Addresses</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">My Addresses</h1>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
             Manage your saved addresses for home service bookings.
           </p>
         </div>
@@ -205,9 +213,9 @@ const AddressesPage: React.FC = () => {
 
       {addresses.length === 0 && !error ? (
         <div className="text-center py-12">
-          <MapPinIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No addresses saved</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <MapPinIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No addresses saved</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Add your addresses to enable home service bookings.
           </p>
           <div className="mt-6">
@@ -246,7 +254,7 @@ const AddressesPage: React.FC = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {address.address_label}
                       </h3>
                       {address.is_primary && (
@@ -290,10 +298,10 @@ const AddressesPage: React.FC = () => {
 
       {/* Add/Edit Address Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 {editingAddress ? 'Edit Address' : 'Add New Address'}
               </h3>
               <button
@@ -406,9 +414,9 @@ const AddressesPage: React.FC = () => {
                   name="is_primary"
                   checked={formData.is_primary || false}
                   onChange={handleInputChange}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <label htmlFor="is_primary" className="ml-2 block text-sm text-gray-900">
+                <label htmlFor="is_primary" className="ml-2 block text-sm text-gray-900 dark:text-white">
                   Set as primary address
                 </label>
               </div>

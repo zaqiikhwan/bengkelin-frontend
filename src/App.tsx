@@ -2,12 +2,16 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/ProfilePage';
-import BengkelsPage from './pages/BengkelsPage';
+
+import BengkelListPage from './pages/BengkelListPage';
+import BengkelDetailPage from './pages/BengkelDetailPage';
 import OrdersPage from './pages/OrdersPage';
+import OrderDetailsPage from './pages/OrderDetailsPage';
 import HealthPage from './pages/HealthPage';
 import VehiclesPage from './pages/VehiclesPage';
 import AddressesPage from './pages/AddressesPage';
@@ -51,6 +55,9 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Routes>
+            {/* Public landing page - don't redirect if authenticated, let users browse */}
+            <Route path="/" element={<LandingPage />} />
+            
             {/* Public routes */}
             <Route 
               path="/login" 
@@ -68,31 +75,114 @@ function App() {
                 </PublicRoute>
               } 
             />
+            
+            {/* Public bengkel routes */}
+            <Route path="/bengkels" element={<BengkelListPage />} />
+            <Route path="/bengkels/:id" element={<BengkelDetailPage />} />
 
             {/* Protected routes */}
             <Route 
-              path="/" 
+              path="/dashboard" 
               element={
                 <ProtectedRoute>
                   <Layout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="bengkels" element={<BengkelsPage />} />
-              <Route path="bengkel" element={<BengkelManagementPage />} />
-              <Route path="orders" element={<OrdersPage />} />
-              <Route path="vehicles" element={<VehiclesPage />} />
-              <Route path="addresses" element={<AddressesPage />} />
-              <Route path="chat" element={<ChatPage />} />
-              <Route path="health" element={<HealthPage />} />
-              <Route path="booking/:bengkelId" element={<BookingPage />} />
+              <Route index element={<DashboardPage />} />
+            </Route>
+            
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<ProfilePage />} />
+            </Route>
+            
+            <Route 
+              path="/orders" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<OrdersPage />} />
+              <Route path=":orderId" element={<OrderDetailsPage />} />
+            </Route>
+            
+            <Route 
+              path="/vehicles" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<VehiclesPage />} />
+            </Route>
+            
+            <Route 
+              path="/addresses" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<AddressesPage />} />
+            </Route>
+            
+            <Route 
+              path="/chat" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<ChatPage />} />
+            </Route>
+            
+            <Route 
+              path="/bengkel" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<BengkelManagementPage />} />
+            </Route>
+            
+            <Route 
+              path="/health" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<HealthPage />} />
+            </Route>
+            
+            <Route 
+              path="/booking/:bengkelId" 
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<BookingPage />} />
             </Route>
 
             {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>

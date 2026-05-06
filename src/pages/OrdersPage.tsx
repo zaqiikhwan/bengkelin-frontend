@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import type { Order } from '../types/api';
 import { 
@@ -12,18 +13,35 @@ import {
 
 const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
+  const { userType } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [userType]);
 
   const loadOrders = async () => {
     try {
-      const response = await apiService.getUserOrders(1, 50);
-      if (response.success) {
-        setOrders(response.data?.orders || []);
+      setLoading(true);
+      let response;
+      
+      console.log('Loading orders for user type:', userType);
+      
+      if (userType === 'users') {
+        response = await apiService.getUserOrders(1, 50);
+      } else {
+        response = await apiService.getMitraOrders(1, 50);
+      }
+      
+      console.log('Orders API response:', response);
+      
+      if (response.success && response.data) {
+        const ordersData = response.data.orders || [];
+        console.log('Setting orders:', ordersData);
+        setOrders(ordersData);
+      } else {
+        console.error('Failed to load orders:', response.message);
       }
     } catch (error) {
       console.error('Failed to load orders:', error);
@@ -77,9 +95,14 @@ const OrdersPage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">My Orders</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Track and manage your service orders.
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            {userType === 'users' ? 'My Orders' : 'Bengkel Orders'}
+          </h1>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+            {userType === 'users' 
+              ? 'Track and manage your service orders.'
+              : 'Manage orders for your bengkel.'
+            }
           </p>
         </div>
       </div>
@@ -93,34 +116,54 @@ const OrdersPage: React.FC = () => {
               <div key={order.id} className="card">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4">
-                    <div className="h-12 w-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <StatusIcon className="h-6 w-6 text-primary-600" />
+                    <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                      <StatusIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           Order #{order.id}
                         </h3>
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
                           {getStatusText(order.status)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {order.bengkel?.bengkel_name || 'Bengkel'}
                       </p>
-                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                      
+                      {/* Display order services */}
+                      {order.order_services && order.order_services.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <span className="font-medium">Services:</span>{' '}
+                            {order.order_services.map(service => service.title).join(', ')}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center">
                           <CalendarIcon className="h-4 w-4 mr-1" />
                           <span>{new Date(order.created_at).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center">
-                          <span className="font-medium text-gray-900">
-                            Rp {order.total_price.toLocaleString()}
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {new Intl.NumberFormat('id-ID', {
+                              style: 'currency',
+                              currency: 'IDR',
+                              minimumFractionDigits: 0
+                            }).format(order.total_price)}
                           </span>
                         </div>
+                        {order.vehicle && (
+                          <div className="flex items-center">
+                            <span>{order.vehicle.vehicle_number}</span>
+                          </div>
+                        )}
                       </div>
                       {order.note && (
-                        <p className="text-sm text-gray-600 mt-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                           <span className="font-medium">Notes:</span> {order.note}
                         </p>
                       )}
@@ -128,8 +171,11 @@ const OrdersPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end space-x-2">
-                  <button className="btn-secondary text-sm">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
+                  <button 
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                    className="btn-secondary text-sm"
+                  >
                     View Details
                   </button>
                   {order.status === 0 && (
@@ -145,19 +191,24 @@ const OrdersPage: React.FC = () => {
 
         {orders.length === 0 && (
           <div className="text-center py-12">
-            <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              You haven't placed any orders yet.
+            <CalendarIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No orders found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {userType === 'users' 
+                ? "You haven't placed any orders yet."
+                : "No orders have been placed at your bengkel yet."
+              }
             </p>
-            <div className="mt-6">
-              <button 
-                onClick={() => navigate('/bengkels')}
-                className="btn-primary"
-              >
-                Browse Bengkels
-              </button>
-            </div>
+            {userType === 'users' && (
+              <div className="mt-6">
+                <button 
+                  onClick={() => navigate('/bengkels')}
+                  className="btn-primary"
+                >
+                  Browse Bengkels
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

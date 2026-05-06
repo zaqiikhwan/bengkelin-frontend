@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
-import type { Vehicle, AddVehicleRequest, UpdateVehicleRequest } from '../types/api';
+import type { Vehicle, AddVehicleRequest } from '../types/api';
 import { 
   TruckIcon, 
   PlusIcon,
@@ -10,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const VehiclesPage: React.FC = () => {
+  const { userType } = useAuth();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,10 +34,21 @@ const VehiclesPage: React.FC = () => {
   const loadVehicles = async () => {
     try {
       setLoading(true);
-      // Get vehicles from user profile since there's no dedicated vehicles endpoint
-      const response = await apiService.getUserProfile();
-      if (response.success && response.data && response.data.vehicles) {
-        setVehicles(response.data.vehicles);
+      // Get vehicles from profile based on user type
+      let response;
+      if (userType === 'users') {
+        response = await apiService.getUserProfile();
+      } else {
+        response = await apiService.getMitraProfile();
+      }
+      
+      if (response.success && response.data) {
+        const userData = response.data as any;
+        if (userData.vehicles) {
+          setVehicles(userData.vehicles);
+        } else {
+          setVehicles([]);
+        }
       } else {
         setVehicles([]);
       }
@@ -154,8 +167,8 @@ const VehiclesPage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">My Vehicles</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">My Vehicles</h1>
+          <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
             Manage your vehicles for service bookings.
           </p>
         </div>
@@ -181,9 +194,9 @@ const VehiclesPage: React.FC = () => {
 
       {vehicles.length === 0 ? (
         <div className="text-center py-12">
-          <TruckIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No vehicles registered</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <TruckIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No vehicles registered</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Add your vehicles to enable service bookings.
           </p>
           <div className="mt-6">
@@ -199,14 +212,14 @@ const VehiclesPage: React.FC = () => {
             <div key={vehicle.vehicle_id} className="card">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
-                  <div className="h-12 w-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <TruckIcon className="h-6 w-6 text-primary-600" />
+                  <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                    <TruckIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {vehicle.vehicle_number}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {vehicle.vehicle_type} • {vehicle.vehicle_color}
                     </p>
                     {vehicle.photos && vehicle.photos.length > 0 && (
@@ -231,13 +244,13 @@ const VehiclesPage: React.FC = () => {
                 <div className="flex space-x-2">
                   <button 
                     onClick={() => handleEditVehicle(vehicle)}
-                    className="p-2 text-gray-400 hover:text-gray-600"
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button 
                     onClick={() => handleDeleteVehicle(vehicle.vehicle_id)}
-                    className="p-2 text-gray-400 hover:text-red-600"
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
@@ -250,15 +263,15 @@ const VehiclesPage: React.FC = () => {
 
       {/* Add/Edit Vehicle Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
               </h3>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -277,7 +290,7 @@ const VehiclesPage: React.FC = () => {
               )}
 
               <div>
-                <label htmlFor="vehicle_type" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="vehicle_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Vehicle Type *
                 </label>
                 <select
@@ -297,7 +310,7 @@ const VehiclesPage: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="vehicle_number" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="vehicle_number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   License Plate *
                 </label>
                 <input

@@ -1,10 +1,12 @@
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
   }
 }
 
@@ -14,14 +16,77 @@
   }
   
   .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6;
+  }
+}
+
+/* Print styles */
+@media print {
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+  
+  body {
+    @apply bg-white text-gray-900;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  /* Hide navigation, buttons, and interactive elements */
+  nav,
+  button:not(.print\:show),
+  .fixed,
+  header,
+  footer {
+    display: none !important;
+  }
+  
+  /* Optimize layout for print */
+  .max-w-4xl {
+    max-width: 100% !important;
+  }
+  
+  /* Remove shadows and borders for cleaner print */
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+  
+  /* Ensure proper page breaks */
+  .card,
+  .bg-white {
+    page-break-inside: avoid;
+  }
+  
+  /* Force light mode colors for print */
+  .dark\:bg-gray-800,
+  .dark\:bg-gray-900 {
+    background-color: white !important;
+  }
+  
+  .dark\:text-white,
+  .dark\:text-gray-100 {
+    color: #111827 !important;
+  }
+  
+  .dark\:text-gray-300,
+  .dark\:text-gray-400 {
+    color: #4b5563 !important;
+  }
+  
+  .dark\:border-gray-700 {
+    border-color: #e5e7eb !important;
   }
 }
