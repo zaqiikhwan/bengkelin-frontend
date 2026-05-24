@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 import type { BengkelDetailResponse, Vehicle, OrderServiceItem } from '../types/api';
-import { 
+import {
   ChevronLeftIcon,
   TruckIcon,
   WrenchScrewdriverIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  XCircleIcon,
+  PhoneIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  HomeIcon,
+  BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
 
 const BookingPage: React.FC = () => {
@@ -15,6 +22,7 @@ const BookingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, userType } = useAuth();
+  const toast = useToast();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -138,7 +146,7 @@ const BookingPage: React.FC = () => {
       
       if (response.success && response.data) {
         // Show success message with order details
-        alert(`Order created successfully! Order ID: ${response.data.pesanan_id}`);
+        toast.success(`Order created successfully! Order ID: ${response.data.pesanan_id}`);
         navigate('/orders');
       } else {
         setError(response.message || 'Failed to create booking');
@@ -188,16 +196,16 @@ const BookingPage: React.FC = () => {
       <div className="mb-8">
         <button
           onClick={() => navigate(`/bengkels/${bengkelId}`)}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ChevronLeftIcon className="h-5 w-5 mr-1" />
           Back to Bengkel Details
         </button>
         
-        <h1 className="text-2xl font-bold text-gray-900">Book Service</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Book Service</h1>
         {bengkel && (
           <div className="mt-2">
-            <p className="text-lg text-gray-700">{bengkel.bengkel_name}</p>
+            <p className="text-lg text-gray-700 dark:text-gray-300">{bengkel.bengkel_name}</p>
             <p className="text-sm text-gray-500">{bengkel.bengkel_phone}</p>
             {bengkel.addresses && bengkel.addresses.length > 0 && (
               <p className="text-sm text-gray-500">{bengkel.addresses[0].full_address}</p>
@@ -207,7 +215,7 @@ const BookingPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+        <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-md">
           {error}
         </div>
       )}
@@ -231,7 +239,7 @@ const BookingPage: React.FC = () => {
               }`}>
                 {step === 1 ? 'Vehicle' : step === 2 ? 'Services' : 'Details'}
               </span>
-              {step < 3 && <div className="w-8 h-0.5 bg-gray-200 ml-4" />}
+              {step < 3 && <div className="w-8 h-0.5 bg-gray-200 dark:bg-gray-700 ml-4" />}
             </div>
           ))}
         </div>
@@ -239,45 +247,45 @@ const BookingPage: React.FC = () => {
 
       {/* Bengkel Info Card */}
       {bengkel && (
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
           <div className="flex items-start space-x-4">
             {bengkel.avatar_url ? (
               <img
                 src={bengkel.avatar_url}
                 alt={bengkel.bengkel_name}
-                className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
               />
             ) : (
-              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                <WrenchScrewdriverIcon className="w-8 h-8 text-gray-400" />
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <WrenchScrewdriverIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
             )}
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-gray-900">{bengkel.bengkel_name}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{bengkel.bengkel_name}</h2>
               <div className="mt-2 space-y-1">
-                <p className="text-sm text-gray-600">📞 {bengkel.bengkel_phone}</p>
-                <p className="text-sm text-gray-600">👨‍🔧 {bengkel.jumlah_montir} mechanics</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5"><PhoneIcon className="w-4 h-4 flex-shrink-0" /> {bengkel.bengkel_phone}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5"><UserGroupIcon className="w-4 h-4 flex-shrink-0" /> {bengkel.jumlah_montir} mechanics</p>
                 {bengkel.addresses && bengkel.addresses.length > 0 && (
-                  <p className="text-sm text-gray-600">📍 {bengkel.addresses[0].full_address}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1.5"><MapPinIcon className="w-4 h-4 flex-shrink-0" /> {bengkel.addresses[0].full_address}</p>
                 )}
               </div>
               <div className="mt-3 flex items-center space-x-4">
                 {bengkel.home_service && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    🏠 Home Service
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                    <HomeIcon className="w-3.5 h-3.5 mr-1" /> Home Service
                   </span>
                 )}
                 {bengkel.store_service && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    🏪 In-Store Service
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                    <BuildingStorefrontIcon className="w-3.5 h-3.5 mr-1" /> In-Store Service
                   </span>
                 )}
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  bengkel.is_open 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
+                  bengkel.is_open
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                 }`}>
-                  {bengkel.is_open ? '✅ Open' : '❌ Closed'}
+                  {bengkel.is_open ? <><CheckCircleIcon className="w-3.5 h-3.5 mr-1" /> Open</> : <><XCircleIcon className="w-3.5 h-3.5 mr-1" /> Closed</>}
                 </span>
               </div>
             </div>
@@ -287,12 +295,12 @@ const BookingPage: React.FC = () => {
 
       {/* Step 1: Select Vehicle */}
       {currentStep === 1 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Select Your Vehicle</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 dark:text-white">Select Your Vehicle</h2>
           {vehicles.length === 0 ? (
             <div className="text-center py-8">
               <TruckIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-gray-500">No vehicles found</p>
+              <p className="mt-2 text-gray-500 dark:text-gray-400">No vehicles found</p>
               <button
                 onClick={() => navigate('/vehicles')}
                 className="mt-4 btn-primary"
@@ -308,15 +316,15 @@ const BookingPage: React.FC = () => {
                   onClick={() => setSelectedVehicle(vehicle)}
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                     selectedVehicle?.vehicle_id === vehicle.vehicle_id
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
                     <TruckIcon className="h-8 w-8 text-gray-400" />
                     <div>
-                      <h3 className="font-medium">{vehicle.vehicle_number}</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium dark:text-white">{vehicle.vehicle_number}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {vehicle.vehicle_type} • {vehicle.vehicle_color}
                       </p>
                     </div>
@@ -341,8 +349,8 @@ const BookingPage: React.FC = () => {
 
       {/* Step 2: Select Services */}
       {currentStep === 2 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Select Services</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 dark:text-white">Select Services</h2>
           
           {bengkel?.services && bengkel.services.length > 0 ? (
             <div className="space-y-4">
@@ -363,8 +371,8 @@ const BookingPage: React.FC = () => {
                       onClick={() => handleServiceToggle(orderService)}
                       className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                         isSelected
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -414,16 +422,16 @@ const BookingPage: React.FC = () => {
           <div className="mt-6 flex justify-between">
             <button
               onClick={() => setCurrentStep(1)}
-              className="flex items-center text-gray-600 hover:text-gray-900"
+              className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               <ChevronLeftIcon className="h-5 w-5 mr-1" />
               Previous
             </button>
-            
+
             {selectedServices.length > 0 && (
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
                   <p className="font-semibold text-lg">
                     {new Intl.NumberFormat('id-ID', {
                       style: 'currency',
@@ -446,47 +454,47 @@ const BookingPage: React.FC = () => {
 
       {/* Step 3: Order Details */}
       {currentStep === 3 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Order Details</h2>
-          
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 dark:text-white">Order Details</h2>
+
           {/* Service Type Selection */}
           {bengkel && (bengkel.home_service || bengkel.store_service) && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Service Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Service Type</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {bengkel.store_service && (
                   <div
                     onClick={() => setServiceType('store_service')}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                       serviceType === 'store_service'
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="text-2xl">🏪</div>
+                      <BuildingStorefrontIcon className="w-8 h-8 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                       <div>
-                        <h3 className="font-medium">In-Store Service</h3>
-                        <p className="text-sm text-gray-500">Bring your vehicle to the workshop</p>
+                        <h3 className="font-medium dark:text-white">In-Store Service</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Bring your vehicle to the workshop</p>
                       </div>
                     </div>
                   </div>
                 )}
-                
+
                 {bengkel.home_service && (
                   <div
                     onClick={() => setServiceType('home_service')}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                       serviceType === 'home_service'
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="text-2xl">🏠</div>
+                      <HomeIcon className="w-8 h-8 text-gray-500 dark:text-gray-400 flex-shrink-0" />
                       <div>
-                        <h3 className="font-medium">Home Service</h3>
-                        <p className="text-sm text-gray-500">We come to your location</p>
+                        <h3 className="font-medium dark:text-white">Home Service</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">We come to your location</p>
                       </div>
                     </div>
                   </div>
@@ -497,7 +505,7 @@ const BookingPage: React.FC = () => {
 
           {/* Payment Method */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Payment Method</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
@@ -511,7 +519,7 @@ const BookingPage: React.FC = () => {
 
           {/* Order Notes */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">Additional Notes (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Additional Notes (Optional)</label>
             <textarea
               value={orderNote}
               onChange={(e) => setOrderNote(e.target.value)}
@@ -522,8 +530,8 @@ const BookingPage: React.FC = () => {
           </div>
 
           {/* Order Summary */}
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <h3 className="font-medium text-gray-900 mb-3">Order Summary</h3>
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">Order Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Vehicle:</span>
@@ -543,11 +551,11 @@ const BookingPage: React.FC = () => {
               </div>
               
               {/* Services List */}
-              <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="space-y-1">
                   {selectedServices.map((service, index) => (
                     <div key={index} className="flex justify-between text-sm">
-                      <span className="text-gray-600">{service.title}</span>
+                      <span className="text-gray-600 dark:text-gray-400">{service.title}</span>
                       <span className="font-medium">
                         {new Intl.NumberFormat('id-ID', {
                           style: 'currency',
@@ -560,7 +568,7 @@ const BookingPage: React.FC = () => {
                 </div>
               </div>
               
-              <div className="border-t pt-2 mt-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
                 <div className="flex justify-between font-medium">
                   <span>Total Amount:</span>
                   <span>
@@ -578,12 +586,12 @@ const BookingPage: React.FC = () => {
           <div className="flex justify-between">
             <button
               onClick={() => setCurrentStep(2)}
-              className="flex items-center text-gray-600 hover:text-gray-900"
+              className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               <ChevronLeftIcon className="h-5 w-5 mr-1" />
               Previous
             </button>
-            
+
             <button
               onClick={handleSubmitBooking}
               disabled={submitting}

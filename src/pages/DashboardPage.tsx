@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
+import Skeleton from '../components/ui/Skeleton';
 import type { Bengkel, Order } from '../types/api';
 import { 
   CalendarIcon, 
@@ -84,8 +85,49 @@ const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <Skeleton className="mb-2" width="40%" height={32} />
+          <Skeleton width="30%" />
+        </div>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg p-5">
+              <Skeleton className="mb-2" width="50%" />
+              <Skeleton width="30%" height={28} />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <Skeleton className="mb-4" width="30%" height={24} />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton variant="circular" width={40} height={40} />
+                  <div className="flex-1">
+                    <Skeleton className="mb-1" width="60%" />
+                    <Skeleton width="40%" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <Skeleton className="mb-4" width="30%" height={24} />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton variant="circular" width={40} height={40} />
+                  <div className="flex-1">
+                    <Skeleton className="mb-1" width="60%" />
+                    <Skeleton width="40%" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -260,7 +302,7 @@ const DashboardPage: React.FC = () => {
                   <div className="flex items-center">
                     <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      ⭐ 4.5/5
+                      4.5/5
                     </span>
                   </div>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

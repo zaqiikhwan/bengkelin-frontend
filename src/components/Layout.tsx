@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -24,6 +24,33 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close dropdown on Escape key or outside click
+  useEffect(() => {
+    if (!accountDropdownOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAccountDropdownOpen(false);
+        dropdownButtonRef.current?.focus();
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setAccountDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [accountDropdownOpen]);
 
   const handleLogout = () => {
     logout();
@@ -62,6 +89,14 @@ const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      {/* Skip to content link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg"
+      >
+        Skip to content
+      </a>
+
       {/* Navigation */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,9 +133,13 @@ const Layout: React.FC = () => {
                 ))}
 
                 {/* My Account Dropdown */}
-                <div className="relative flex items-center h-16">
+                <div className="relative flex items-center h-16" ref={dropdownRef}>
                   <button
+                    ref={dropdownButtonRef}
                     onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+                    aria-haspopup="true"
+                    aria-expanded={accountDropdownOpen}
+                    aria-controls="account-dropdown-menu"
                     className={`inline-flex items-center px-3 h-16 text-sm font-medium border-b-2 transition-colors ${
                       accountItems.some(item => isActive(item.href))
                         ? 'border-primary-600 dark:border-primary-400 text-primary-600 dark:text-primary-400'
@@ -109,17 +148,23 @@ const Layout: React.FC = () => {
                   >
                     <UserIcon className="h-4 w-4 mr-2" />
                     My Account
-                    <ChevronDownIcon className={`h-4 w-4 ml-1 transition-transform ${accountDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDownIcon className={`h-4 w-4 ml-1 transition-transform ${accountDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </button>
 
                   {/* Dropdown Menu */}
                   {accountDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-0 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                    <div
+                      id="account-dropdown-menu"
+                      role="menu"
+                      aria-label="Account menu"
+                      className="absolute right-0 top-full mt-0 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50"
+                    >
                       <div className="py-1">
                         {accountItems.map((item) => (
                           <Link
                             key={item.name}
                             to={item.href}
+                            role="menuitem"
                             onClick={() => setAccountDropdownOpen(false)}
                             className={`flex items-center px-4 py-2 text-sm transition-colors ${
                               isActive(item.href)
@@ -127,7 +172,7 @@ const Layout: React.FC = () => {
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                             }`}
                           >
-                            <item.icon className="h-4 w-4 mr-3" />
+                            <item.icon className="h-4 w-4 mr-3" aria-hidden="true" />
                             {item.name}
                           </Link>
                         ))}
@@ -249,7 +294,7 @@ const Layout: React.FC = () => {
       </nav>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main id="main-content" className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <Outlet />
       </main>
 

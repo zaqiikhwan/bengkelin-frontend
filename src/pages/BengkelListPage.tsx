@@ -1,24 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import PublicHeader from '../components/PublicHeader';
-import { 
+import { DarkModeToggle } from '../components/DarkModeToggle';
+import BengkelCard from '../components/BengkelCard';
+import { SkeletonCard } from '../components/ui/Skeleton';
+import {
   BuildingStorefrontIcon,
-  MapPinIcon,
-  StarIcon,
-  PhoneIcon,
-  CheckCircleIcon,
-  XCircleIcon,
   MagnifyingGlassIcon,
   UserIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  WrenchScrewdriverIcon,
+  HomeIcon,
+  CalendarIcon,
+  ChatBubbleLeftRightIcon,
+  ChevronDownIcon,
+  TruckIcon,
+  MapPinIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import type { Bengkel } from '../types/api';
 
 const BengkelListPage: React.FC = () => {
-  const { isAuthenticated, user, mitra, logout } = useAuth();
+  const { isAuthenticated, user, mitra, userType, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [bengkels, setBengkels] = useState<Bengkel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,23 +34,51 @@ const BengkelListPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    loadBengkels();
-  }, []);
+  const isActive = (path: string) => location.pathname === path;
+  const currentUser = userType === 'mitras' ? mitra : user;
 
-  const loadBengkels = async (page = 1, search = '') => {
+  const mainNavigation = userType === 'mitras'
+    ? [
+        { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+        { name: 'My Bengkel', href: '/bengkel', icon: BuildingStorefrontIcon },
+        { name: 'Orders', href: '/orders', icon: CalendarIcon },
+        { name: 'Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
+      ]
+    : [
+        { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+        { name: 'Bengkels', href: '/bengkels', icon: WrenchScrewdriverIcon },
+        { name: 'My Orders', href: '/orders', icon: CalendarIcon },
+        { name: 'Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
+      ];
+
+  const accountItems = userType === 'mitras'
+    ? [{ name: 'Profile', href: '/profile', icon: UserIcon }]
+    : [
+        { name: 'Profile', href: '/profile', icon: UserIcon },
+        { name: 'My Vehicles', href: '/vehicles', icon: TruckIcon },
+        { name: 'Addresses', href: '/addresses', icon: MapPinIcon },
+      ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const loadBengkels = useCallback(async (page = 1, search = '') => {
     try {
       setLoading(page === 1);
       if (page > 1) setLoadingMore(true);
-      
+
       let response;
       if (search.trim()) {
         response = await apiService.searchBengkels(search, undefined, page, 10);
       } else {
         response = await apiService.getBengkels(page, 10);
       }
-      
+
       console.log('API Response:', response); // Debug log
       
       if (response.success && response.data) {
@@ -80,40 +116,35 @@ const BengkelListPage: React.FC = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadBengkels();
+  }, [loadBengkels]);
+
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
     loadBengkels(1, searchQuery);
-  };
+  }, [loadBengkels, searchQuery]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (currentPage < totalPages) {
       loadBengkels(currentPage + 1, searchQuery);
     }
-  };
-
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <div key={star}>
-            {star <= rating ? (
-              <StarSolidIcon className="h-4 w-4 text-yellow-400" />
-            ) : (
-              <StarIcon className="h-4 w-4 text-gray-300" />
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
+  }, [loadBengkels, currentPage, totalPages, searchQuery]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -153,51 +184,181 @@ const BengkelListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Authenticated Header */}
+      {/* Authenticated Header - matches Layout nav */}
       {isAuthenticated && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
+        <nav className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700 transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <Link to="/dashboard" className="flex items-center space-x-2">
-                  <BuildingStorefrontIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">Bengkelin</span>
-                </Link>
-              </div>
-              
-              <nav className="hidden md:flex space-x-8">
-                <Link to="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 text-sm font-medium">
-                  Dashboard
-                </Link>
-                <Link to="/bengkels" className="text-primary-600 dark:text-primary-400 px-3 py-2 text-sm font-medium border-b-2 border-primary-600 dark:border-primary-400">
-                  Find Bengkels
-                </Link>
-                <Link to="/orders" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 text-sm font-medium">
-                  My Orders
-                </Link>
-                <Link to="/chat" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 px-3 py-2 text-sm font-medium">
-                  Chat
-                </Link>
-              </nav>
+            <div className="flex justify-between h-16">
+              <div className="flex">
+                {/* Logo */}
+                <div className="flex-shrink-0 flex items-center">
+                  <WrenchScrewdriverIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+                  <span className="ml-2 text-xl font-bold text-gray-900 dark:text-white">
+                    Bengkelin
+                  </span>
+                  {userType && (
+                    <span className="ml-3 px-2 py-1 text-xs font-medium bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300 rounded-full">
+                      {userType === 'mitras' ? 'Bengkel Owner' : 'Customer'}
+                    </span>
+                  )}
+                </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
+                {/* Desktop Navigation */}
+                <div className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+                  {mainNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`inline-flex items-center px-3 h-16 text-sm font-medium border-b-2 transition-colors ${
+                        isActive(item.href)
+                          ? 'border-primary-600 dark:border-primary-400 text-primary-600 dark:text-primary-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4 mr-2" />
+                      {item.name}
+                    </Link>
+                  ))}
+
+                  {/* My Account Dropdown */}
+                  <div className="relative flex items-center h-16">
+                    <button
+                      onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+                      className={`inline-flex items-center px-3 h-16 text-sm font-medium border-b-2 transition-colors ${
+                        accountItems.some(item => isActive(item.href))
+                          ? 'border-primary-600 dark:border-primary-400 text-primary-600 dark:text-primary-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <UserIcon className="h-4 w-4 mr-2" />
+                      My Account
+                      <ChevronDownIcon className={`h-4 w-4 ml-1 transition-transform ${accountDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {accountDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-0 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1">
+                          {accountItems.map((item) => (
+                            <Link
+                              key={item.name}
+                              to={item.href}
+                              onClick={() => setAccountDropdownOpen(false)}
+                              className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                                isActive(item.href)
+                                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              <item.icon className="h-4 w-4 mr-3" />
+                              {item.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side items */}
+              <div className="flex items-center space-x-2">
+                <DarkModeToggle />
+                <div className="hidden md:flex items-center space-x-2">
                   <UserIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {user?.first_name || mitra?.first_name || 'User'}
+                    {currentUser?.first_name} {currentUser?.last_name}
                   </span>
                 </div>
                 <button
-                  onClick={logout}
-                  className="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 text-sm font-medium"
+                  onClick={handleLogout}
+                  className="hidden md:inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
                 >
-                  <ArrowRightOnRectangleIcon className="h-4 w-4" />
-                  <span>Logout</span>
+                  <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
+                  Logout
+                </button>
+
+                {/* Mobile menu button */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                >
+                  <span className="sr-only">Open main menu</span>
+                  {mobileMenuOpen ? (
+                    <XMarkIcon className="block h-6 w-6" />
+                  ) : (
+                    <Bars3Icon className="block h-6 w-6" />
+                  )}
                 </button>
               </div>
             </div>
           </div>
-        </div>
+
+          {/* Mobile menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t dark:border-gray-700">
+              <div className="px-2 pt-2 pb-3 space-y-1">
+                {mainNavigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5 mr-3" />
+                    {item.name}
+                  </Link>
+                ))}
+                <div className="pt-2 border-t dark:border-gray-700">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    My Account
+                  </div>
+                  {accountItems.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                        isActive(item.href)
+                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5 mr-3" />
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+                <div className="pt-4 pb-3 border-t dark:border-gray-700">
+                  <div className="flex items-center px-3 mb-3">
+                    <UserIcon className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                    <div className="ml-3">
+                      <div className="text-base font-medium text-gray-800 dark:text-white">
+                        {currentUser?.first_name} {currentUser?.last_name}
+                      </div>
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        {currentUser?.email}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-500 hover:text-red-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-red-400 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </nav>
       )}
 
       {/* Content */}
@@ -242,93 +403,7 @@ const BengkelListPage: React.FC = () => {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {bengkels.map((bengkel) => (
-                <Link
-                  key={bengkel.bengkel_id}
-                  to={`/bengkels/${bengkel.bengkel_id}`}
-                  className="card hover:shadow-lg transition-shadow cursor-pointer"
-                >
-                  {/* Bengkel Image */}
-                  <div className="relative h-48 bg-gray-200 rounded-t-lg overflow-hidden">
-                    {bengkel.avatar_url ? (
-                      <img
-                        src={bengkel.avatar_url}
-                        alt={bengkel.bengkel_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <BuildingStorefrontIcon className="w-16 h-16 text-gray-400" />
-                      </div>
-                    )}
-                    
-                    {/* Status Badge */}
-                    <div className="absolute top-3 right-3">
-                      {bengkel.is_open ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <CheckCircleIcon className="w-3 h-3 mr-1" />
-                          Open
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <XCircleIcon className="w-3 h-3 mr-1" />
-                          Closed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Bengkel Info */}
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{bengkel.bengkel_name}</h3>
-                    
-                    {/* Rating */}
-                    <div className="flex items-center space-x-2 mb-3">
-                      {renderStars(4)} {/* Default rating since it's not in the basic bengkel type */}
-                      <span className="text-sm text-gray-600 dark:text-gray-400">(4.0)</span>
-                    </div>
-
-                    {/* Contact */}
-                    <div className="flex items-center space-x-2 mb-3">
-                      <PhoneIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{bengkel.bengkel_phone}</span>
-                    </div>
-
-                    {/* Address */}
-                    {bengkel.addresses && bengkel.addresses.length > 0 && (
-                      <div className="flex items-start space-x-2 mb-3">
-                        <MapPinIcon className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {bengkel.addresses[0]?.full_address || 'Address not available'}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Services */}
-                    <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                      {bengkel.home_service && (
-                        <span className="flex items-center">
-                          <CheckCircleIcon className="w-3 h-3 mr-1 text-green-500" />
-                          Home Service
-                        </span>
-                      )}
-                      {bengkel.store_service && (
-                        <span className="flex items-center">
-                          <CheckCircleIcon className="w-3 h-3 mr-1 text-green-500" />
-                          In-Store
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Service Count */}
-                    {bengkel.services && bengkel.services.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <span className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-                          {bengkel.services?.length || 0} services available
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </Link>
+                <BengkelCard key={bengkel.bengkel_id} bengkel={bengkel} />
               ))}
             </div>
 

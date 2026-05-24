@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { webSocketService } from '../services/websocket';
 import type { WebSocketDebugInfo, ConnectionDiagnostics } from '../services/websocket';
-import { 
-  WifiIcon, 
-  ExclamationTriangleIcon, 
+import {
+  WifiIcon,
   CheckCircleIcon,
   XCircleIcon,
   ArrowPathIcon,
-  EyeIcon,
   EyeSlashIcon
 } from '@heroicons/react/24/outline';
 
@@ -105,6 +103,7 @@ const WebSocketDebugPanel: React.FC<WebSocketDebugPanelProps> = ({
         </h3>
         <button
           onClick={onToggle}
+          aria-label="Toggle debug panel"
           className="text-gray-400 hover:text-gray-600"
         >
           <EyeSlashIcon className="w-4 h-4" />

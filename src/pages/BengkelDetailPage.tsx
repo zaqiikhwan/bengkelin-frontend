@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 import PublicHeader from '../components/PublicHeader';
 import { 
   BuildingStorefrontIcon,
@@ -16,7 +17,8 @@ import {
   XCircleIcon,
   EyeIcon,
   CogIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import type { BengkelDetailResponse } from '../types/api';
@@ -25,8 +27,9 @@ const BengkelDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, user, mitra, logout } = useAuth();
+  const toast = useToast();
   const [bengkel, setBengkel] = useState<BengkelDetailResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [testimonialsPage, setTestimonialsPage] = useState(1);
   const [loadingTestimonials, setLoadingTestimonials] = useState(false);
@@ -80,12 +83,13 @@ const BengkelDetailPage: React.FC = () => {
   };
 
   const handleBookService = async () => {
+    if (!bengkel) return;
     if (bengkel.user_context?.can_book_service) {
       // Check if there are available services
       const availableServices = bengkel.services?.filter(service => service.is_available) || [];
       
       if (availableServices.length === 0) {
-        alert('Sorry, no services are currently available for booking at this bengkel.');
+        toast.warning('Sorry, no services are currently available for booking at this bengkel.');
         return;
       }
       
@@ -94,7 +98,7 @@ const BengkelDetailPage: React.FC = () => {
       // Add a small delay to show loading state
       setTimeout(() => {
         // Navigate to booking page with bengkel ID
-        navigate(`/booking/${bengkel.bengkel_id}`);
+        navigate(`/booking/${bengkel!.bengkel_id}`);
         setBookingLoading(false);
       }, 500);
     } else {
@@ -138,14 +142,14 @@ const BengkelDetailPage: React.FC = () => {
           });
           setShowContactModal(false);
         } else {
-          alert('Failed to start chat. Please try again.');
+          toast.error('Failed to start chat. Please try again.');
         }
       } catch (error: any) {
         console.error('Failed to create chat room:', error);
         if (error.response?.status === 401) {
           navigate('/login');
         } else {
-          alert('Failed to start chat. Please try again.');
+          toast.error('Failed to start chat. Please try again.');
         }
       }
     };
@@ -201,7 +205,7 @@ const BengkelDetailPage: React.FC = () => {
                   }}
                   className="flex items-center justify-center space-x-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  <span>💬</span>
+                  <ChatBubbleLeftRightIcon className="w-5 h-5" />
                   <span>WhatsApp</span>
                 </button>
               </div>
@@ -482,11 +486,12 @@ const BengkelDetailPage: React.FC = () => {
                   Photos
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {bengkel.photos.map((photo) => (
+                  {bengkel.photos.map((photo, index) => (
                     <img
                       key={photo.id}
                       src={photo.photo_url}
-                      alt="Bengkel"
+                      alt={`${bengkel.bengkel_name} photo ${index + 1}`}
+                      loading="lazy"
                       className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                     />
                   ))}
@@ -659,7 +664,7 @@ const BengkelDetailPage: React.FC = () => {
                       }}
                       className="bg-green-500 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-600 transition-colors flex items-center justify-center space-x-1"
                     >
-                      <span>💬</span>
+                      <ChatBubbleLeftRightIcon className="w-4 h-4" />
                       <span>WA</span>
                     </button>
                     <button

@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /bengkels
+Allow: /bengkels/*
+Disallow: /dashboard
+Disallow: /chat
+Disallow: /orders
+Disallow: /profile
+Disallow: /vehicles
+Disallow: /addresses
+Disallow: /bengkel
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://bengkelin.id/sitemap.xml

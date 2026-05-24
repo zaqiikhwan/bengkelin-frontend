@@ -7,7 +7,8 @@ import {
   PhoneIcon, 
   XMarkIcon,
   CameraIcon,
-  PhotoIcon
+  PhotoIcon,
+  BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import type { UserUpdateRequest } from '../types/api';
 
@@ -370,9 +371,8 @@ const ProfilePage: React.FC = () => {
               ) : null}
               
               {/* Fallback avatar - always present but hidden if image loads */}
-              <div 
-                className="h-16 w-16 bg-primary-100 rounded-full flex items-center justify-center border-2 border-gray-200"
-                style={{ display: (userType === 'users' && user?.avatar_url) ? 'none' : 'flex' }}
+              <div
+                className={`h-16 w-16 bg-primary-100 rounded-full items-center justify-center border-2 border-gray-200 ${(userType === 'users' && user?.avatar_url) ? 'hidden' : 'flex'}`}
               >
                 <UserIcon className="h-8 w-8 text-primary-600" />
               </div>
@@ -439,7 +439,7 @@ const ProfilePage: React.FC = () => {
                 {mitra.bank_name && (
                   <div className="flex items-center space-x-3">
                     <div className="h-5 w-5 flex items-center justify-center">
-                      <span className="text-gray-400 text-sm">🏦</span>
+                      <BuildingLibraryIcon className="h-5 w-5 text-gray-400" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">Bank Name</p>
@@ -476,12 +476,21 @@ const ProfilePage: React.FC = () => {
 
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+        <div
+          className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-profile-title"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') handleCloseModal();
+          }}
+        >
           <div className="relative top-20 mx-auto p-5 border border-gray-200 dark:border-gray-700 w-full max-w-2xl shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Edit Profile</h3>
+              <h3 id="edit-profile-title" className="text-lg font-medium text-gray-900 dark:text-white">Edit Profile</h3>
               <button
                 onClick={handleCloseModal}
+                aria-label="Close dialog"
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-6 w-6" />
@@ -510,6 +519,7 @@ const ProfilePage: React.FC = () => {
                     id="first_name"
                     name="first_name"
                     required
+                    autoFocus
                     value={formData.first_name}
                     onChange={handleInputChange}
                     className="input-field"

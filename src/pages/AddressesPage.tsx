@@ -306,6 +306,7 @@ const AddressesPage: React.FC = () => {
               </h3>
               <button
                 onClick={handleCloseModal}
+                aria-label="Close dialog"
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-6 w-6" />

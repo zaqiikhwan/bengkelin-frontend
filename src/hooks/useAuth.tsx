@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { apiService } from '../services/api';
-import type { UserInfo, MitraInfo } from '../types/api';
+import type { UserInfo, MitraInfo, RegisterRequest } from '../types/api';
 
 interface AuthContextType {
   user: UserInfo | null;
@@ -11,8 +11,8 @@ interface AuthContextType {
   isLoading: boolean;
   loginAsUser: (email: string, password: string) => Promise<void>;
   loginAsMitra: (email: string, password: string) => Promise<void>;
-  registerAsUser: (userData: any) => Promise<void>;
-  registerAsMitra: (userData: any) => Promise<void>;
+  registerAsUser: (userData: RegisterRequest) => Promise<void>;
+  registerAsMitra: (userData: RegisterRequest) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   switchUserType: (type: 'users' | 'mitras') => void;
@@ -280,7 +280,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const registerAsUser = async (userData: any) => {
+  const registerAsUser = async (userData: RegisterRequest) => {
     try {
       const response = await apiService.userRegister(userData);
       if (response.success && response.data) {
@@ -305,7 +305,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const registerAsMitra = async (userData: any) => {
+  const registerAsMitra = async (userData: RegisterRequest) => {
     try {
       const response = await apiService.mitraRegister(userData);
       if (response.success && response.data) {

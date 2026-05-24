@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
+import BengkelCard from '../components/BengkelCard';
+import { SkeletonCard } from '../components/ui/Skeleton';
 import type { Bengkel } from '../types/api';
-import { 
-  WrenchScrewdriverIcon, 
-  MapPinIcon, 
-  StarIcon,
-  PhoneIcon,
+import {
+  WrenchScrewdriverIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 
 const BengkelsPage: React.FC = () => {
-  const navigate = useNavigate();
   const [bengkels, setBengkels] = useState<Bengkel[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,8 +51,12 @@ const BengkelsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -99,58 +100,10 @@ const BengkelsPage: React.FC = () => {
       {/* Bengkels Grid */}
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {bengkels.map((bengkel) => (
-          <div key={bengkel.bengkel_id} className="card hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="h-12 w-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                  <WrenchScrewdriverIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {bengkel.bengkel_name}
-                  </h3>
-                  <div className="flex items-center mt-1">
-                    <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      4.5/5
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                bengkel.is_open ? 'text-success-600 bg-success-100' : 'text-danger-600 bg-danger-100'
-              }`}>
-                {bengkel.is_open ? 'Open' : 'Closed'}
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-              Professional automotive repair services
-            </p>
-
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <MapPinIcon className="h-4 w-4 mr-2" />
-                <span className="truncate">{bengkel.addresses?.[0]?.full_address || 'Address not available'}</span>
-              </div>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <PhoneIcon className="h-4 w-4 mr-2" />
-                <span>{bengkel.bengkel_phone}</span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex space-x-2">
-              <button 
-                onClick={() => navigate(`/booking/${bengkel.bengkel_id}`)}
-                className="btn-primary flex-1"
-              >
-                Book Service
-              </button>
-              <button className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                Details
-              </button>
-            </div>
-          </div>
+          <BengkelCard
+            key={bengkel.bengkel_id}
+            bengkel={bengkel}
+          />
         ))}
       </div>
 

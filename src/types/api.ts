@@ -13,6 +13,14 @@ export interface RegisterRequest {
   confirm_password: string;
 }
 
+// Pagination Types
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
 export interface UserUpdateRequest {
   first_name: string;
   last_name: string;
@@ -62,10 +70,10 @@ export interface APIErrorResponse {
 }
 
 // API Response Types
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   success: boolean;
   message: string;
-  errors?: any;
+  errors?: Record<string, string[]> | string;
   data?: T;
 }
 
@@ -125,6 +133,7 @@ export interface Bengkel {
   bengkel_id: string;
   bengkel_name: string;
   bengkel_phone: string;
+  description?: string;
   jumlah_montir: number;
   home_service?: boolean;
   store_service?: boolean;

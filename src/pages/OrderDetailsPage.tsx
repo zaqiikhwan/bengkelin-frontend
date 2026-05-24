@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../contexts/ToastContext';
 import type { Order } from '../types/api';
 import { 
   ChevronLeftIcon,
@@ -21,6 +22,7 @@ const OrderDetailsPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { userType } = useAuth();
+  const toast = useToast();
   
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -149,7 +151,7 @@ const OrderDetailsPage: React.FC = () => {
         
         // Show success message
         const statusText = getStatusText(newStatus);
-        alert(`Order ${statusText.toLowerCase()} successfully!`);
+        toast.success(`Order ${statusText.toLowerCase()} successfully!`);
       } else {
         setError(response.message || 'Failed to update order status');
       }
