@@ -4,6 +4,14 @@ import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import type { Order } from '../types/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+
+function resolvePhotoUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 import { 
   ChevronLeftIcon,
   CalendarIcon,
@@ -316,7 +324,7 @@ const OrderDetailsPage: React.FC = () => {
               <div className="flex items-start space-x-4">
                 {order.bengkel.avatar_url ? (
                   <img
-                    src={order.bengkel.avatar_url}
+                    src={resolvePhotoUrl(order.bengkel.avatar_url)}
                     alt={order.bengkel.bengkel_name}
                     className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                   />
@@ -511,7 +519,7 @@ const OrderDetailsPage: React.FC = () => {
               <div className="flex items-center space-x-3">
                 {order.user.avatar_url ? (
                   <img
-                    src={order.user.avatar_url}
+                    src={resolvePhotoUrl(order.user.avatar_url)}
                     alt={`${order.user.first_name} ${order.user.last_name}`}
                     className="w-10 h-10 rounded-full object-cover"
                   />

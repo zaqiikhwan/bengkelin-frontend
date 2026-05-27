@@ -96,8 +96,10 @@ export function useChat() {
       let response;
       if (userType === 'mitras') {
         const profileResponse = await apiService.getMitraProfile();
-        if (profileResponse.success && profileResponse.data?.bengkel && profileResponse.data.bengkel.length > 0) {
-          response = await apiService.getBengkelChatRooms(profileResponse.data.bengkel[0].bengkel_id, 1, 20);
+        const bengkel = profileResponse.data?.bengkel?.[0];
+        const bengkelId = bengkel?.bengkel_id || (bengkel as any)?.id;
+        if (profileResponse.success && bengkelId) {
+          response = await apiService.getBengkelChatRooms(bengkelId, 1, 20);
         } else {
           setRooms([]);
           return;

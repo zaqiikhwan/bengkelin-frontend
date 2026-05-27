@@ -3,6 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+
+function resolvePhotoUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 import PublicHeader from '../components/PublicHeader';
 import { 
   BuildingStorefrontIcon,
@@ -42,16 +50,22 @@ const BengkelDetailPage: React.FC = () => {
     }
   }, [id]);
 
+  const normalizeBengkel = (raw: BengkelDetailResponse): BengkelDetailResponse => ({
+    ...raw,
+    operasionals: raw.operasionals || raw.operational || [],
+    addresses: raw.addresses || (raw.address ? [raw.address] : []),
+  });
+
   const loadBengkelDetail = async (page = 1) => {
     try {
       setLoading(page === 1);
       if (page > 1) setLoadingTestimonials(true);
-      
+
       const response = await apiService.getBengkelDetail(id!, page, 10);
-      
+
       if (response.success && response.data) {
         if (page === 1) {
-          setBengkel(response.data);
+          setBengkel(normalizeBengkel(response.data));
         } else {
           // Append new testimonials for pagination
           setBengkel(prev => {
@@ -345,7 +359,7 @@ const BengkelDetailPage: React.FC = () => {
             <div className="flex items-start space-x-4">
               {bengkel.avatar_url ? (
                 <img
-                  src={bengkel.avatar_url}
+                  src={resolvePhotoUrl(bengkel.avatar_url)}
                   alt={bengkel.bengkel_name}
                   className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                 />
@@ -488,8 +502,8 @@ const BengkelDetailPage: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {bengkel.photos.map((photo, index) => (
                     <img
-                      key={photo.id}
-                      src={photo.photo_url}
+                      key={photo.id || photo.photo_id || index}
+                      src={resolvePhotoUrl(photo.photo_url)}
                       alt={`${bengkel.bengkel_name} photo ${index + 1}`}
                       loading="lazy"
                       className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"

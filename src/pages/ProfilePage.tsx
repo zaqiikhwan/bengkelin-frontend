@@ -1,6 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+
+function resolvePhotoUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 import { 
   UserIcon, 
   EnvelopeIcon, 
@@ -345,7 +353,7 @@ const ProfilePage: React.FC = () => {
               {userType === 'users' && user?.avatar_url ? (
                 <div className="relative group">
                   <img
-                    src={user.avatar_url}
+                    src={resolvePhotoUrl(user.avatar_url)}
                     alt={`${user.first_name} ${user.last_name}`}
                     className="h-16 w-16 rounded-full object-cover border-2 border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={handleAvatarImageClick}
@@ -716,7 +724,7 @@ const ProfilePage: React.FC = () => {
             
             {/* Image */}
             <img
-              src={user.avatar_url}
+              src={resolvePhotoUrl(user.avatar_url)}
               alt={`${user.first_name} ${user.last_name} - Full Size`}
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-pointer"
               onClick={() => setIsImagePreviewOpen(false)}

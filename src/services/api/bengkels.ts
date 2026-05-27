@@ -122,6 +122,10 @@ export function uploadBengkelPhotos(api: AxiosInstance, files: File[]): Promise<
   }).then(r => r.data);
 }
 
+export function deleteBengkelPhoto(api: AxiosInstance, photoId: number): Promise<APIResponse> {
+  return api.delete(`/bengkels/photo/${photoId}`).then(r => r.data);
+}
+
 export function updateBengkelAvatar(api: AxiosInstance, file: File): Promise<APIResponse> {
   const formData = new FormData();
   formData.append('avatar', file);

@@ -4,6 +4,14 @@ import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import type { BengkelDetailResponse, Vehicle, OrderServiceItem } from '../types/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+
+function resolvePhotoUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 import {
   ChevronLeftIcon,
   TruckIcon,
@@ -46,17 +54,21 @@ const BookingPage: React.FC = () => {
     }
   }, [bengkelId]);
 
+  const normalizeBengkel = (raw: BengkelDetailResponse): BengkelDetailResponse => ({
+    ...raw,
+    operasionals: raw.operasionals || raw.operational || [],
+    addresses: raw.addresses || (raw.address ? [raw.address] : []),
+  });
+
   const loadBookingData = async () => {
     try {
       setLoading(true);
-      
+
       // Load bengkel data from API
       const bengkelResponse = await apiService.getBengkelDetail(bengkelId!);
-      console.log('Bengkel API Response:', bengkelResponse); // Debug log
-      
+
       if (bengkelResponse.success && bengkelResponse.data) {
-        setBengkel(bengkelResponse.data);
-        console.log('Bengkel services:', bengkelResponse.data.services); // Debug log
+        setBengkel(normalizeBengkel(bengkelResponse.data));
         
         // Check for pre-selected service from URL params
         const preSelectedServiceId = searchParams.get('service');
@@ -251,7 +263,7 @@ const BookingPage: React.FC = () => {
           <div className="flex items-start space-x-4">
             {bengkel.avatar_url ? (
               <img
-                src={bengkel.avatar_url}
+                src={resolvePhotoUrl(bengkel.avatar_url)}
                 alt={bengkel.bengkel_name}
                 className="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
               />

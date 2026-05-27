@@ -2,6 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import type { Vehicle, AddVehicleRequest } from '../types/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+
+function resolvePhotoUrl(url: string): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
 import { 
   TruckIcon, 
   PlusIcon,
@@ -226,8 +234,8 @@ const VehiclesPage: React.FC = () => {
                       <div className="mt-2 flex space-x-2">
                         {vehicle.photos.slice(0, 3).map((photo) => (
                           <img
-                            key={photo.id}
-                            src={photo.photo_url}
+                            key={photo.id || photo.photo_id || 0}
+                            src={resolvePhotoUrl(photo.photo_url)}
                             alt="Vehicle"
                             className="h-16 w-16 object-cover rounded-md"
                           />

@@ -111,6 +111,7 @@ export interface Vehicle {
 
 export interface VehiclePhoto {
   id: number;
+  photo_id?: number;
   photo_url: string;
 }
 
@@ -142,9 +143,11 @@ export interface Bengkel {
   created_at: string;
   updated_at: string;
   operasionals: BengkelOperational[];
+  operational?: BengkelOperational[]; // API alternate field name
   photos: BengkelPhoto[];
   services: BengkelService[];
   addresses: BengkelAddress[];
+  address?: BengkelAddress; // API alternate field name (singular)
   testimonials?: BengkelTestimonial[];
 }
 
@@ -175,6 +178,7 @@ export interface BengkelService {
 
 export interface BengkelPhoto {
   id: number;
+  photo_id?: number;
   photo_url: string;
 }
 
@@ -205,8 +209,10 @@ export interface BengkelDetailResponse {
   updated_at: string;
   services: BengkelService[];
   operasionals: BengkelOperational[];
+  operational?: BengkelOperational[]; // API alternate field name
   photos: BengkelPhoto[];
   addresses: BengkelAddress[];
+  address?: BengkelAddress; // API alternate field name (singular)
   testimonials: {
     data: BengkelTestimonial[];
     total_count: number;

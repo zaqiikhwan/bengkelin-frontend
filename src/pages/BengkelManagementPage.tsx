@@ -19,7 +19,13 @@ const BengkelManagementPage: React.FC = () => {
   const { isAuthenticated, userType } = useAuth();
   const [bengkel, setBengkel] = useState<Bengkel | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [updatingServiceOptions, setUpdatingServiceOptions] = useState(false);
+  const [updatingOperationalHours, setUpdatingOperationalHours] = useState(false);
+  const [updatingAddresses, setUpdatingAddresses] = useState(false);
+  const [updatingServices, setUpdatingServices] = useState(false);
+  const [updatingPhotos, setUpdatingPhotos] = useState(false);
+  const [deletingPhotoId, setDeletingPhotoId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -51,7 +57,12 @@ const BengkelManagementPage: React.FC = () => {
       const mitraResponse = await apiService.getMitraProfile();
       if (mitraResponse.success && mitraResponse.data) {
         if (mitraResponse.data.bengkel && mitraResponse.data.bengkel.length > 0) {
-          const d = mitraResponse.data.bengkel[0];
+          const raw = mitraResponse.data.bengkel[0];
+          const d: Bengkel = {
+            ...raw,
+            operasionals: raw.operasionals || raw.operational || [],
+            addresses: raw.addresses || (raw.address ? [raw.address] : []),
+          };
           setBengkel(d);
           setProfileForm({ bengkel_name: d.bengkel_name || '', bengkel_phone: d.bengkel_phone || '', jumlah_montir: d.jumlah_montir || 1 });
           setServiceOptions({ home_service: d.home_service || false, store_service: d.store_service || false, is_open: d.is_open || false });
@@ -75,7 +86,7 @@ const BengkelManagementPage: React.FC = () => {
 
   const createBengkel = async () => {
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingProfile(true); setError(''); setSuccess('');
       const response = await apiService.createBengkelV2({
         bengkel_name: profileForm.bengkel_name,
         bengkel_phone: profileForm.bengkel_phone,
@@ -83,64 +94,64 @@ const BengkelManagementPage: React.FC = () => {
         operasionals: createOperationalForm.operasionals,
       });
       if (response.success) { setSuccess('Bengkel created successfully!'); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to create bengkel'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to create bengkel'); } finally { setUpdatingProfile(false); }
   };
 
   const updateProfile = async () => {
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingProfile(true); setError(''); setSuccess('');
       const response = await apiService.updateBengkelProfile(profileForm);
       if (response.success) { setSuccess('Profile updated!'); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to update profile'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to update profile'); } finally { setUpdatingProfile(false); }
   };
 
   const updateServiceOptions = async () => {
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingServiceOptions(true); setError(''); setSuccess('');
       const response = await apiService.updateBengkelServiceOptions(serviceOptions);
       if (response.success) { setSuccess('Service options updated!'); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to update service options'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to update service options'); } finally { setUpdatingServiceOptions(false); }
   };
 
   const updateOperationalHours = async () => {
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingOperationalHours(true); setError(''); setSuccess('');
       const response = await apiService.updateBengkelOperationalV2({
         operasionals: operationalHours.map((op) => ({ id: op.id || 0, hari: op.hari, jam_buka: op.jam_buka, jam_tutup: op.jam_tutup || '17:00', is_active: true })),
       });
       if (response.success) { setSuccess('Operational hours updated!'); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to update operational hours'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to update operational hours'); } finally { setUpdatingOperationalHours(false); }
   };
 
   const addService = async () => {
     if (!isAuthenticated || userType !== 'mitras' || !newService.trim()) return;
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingServices(true); setError(''); setSuccess('');
       const response = await apiService.addBengkelService({
         services: [{ nama_service: newService.trim(), description: newServiceDescription.trim(), price: newServicePrice, is_available: true }],
       });
       if (response.success) { setSuccess('Service added!'); setNewService(''); setNewServiceDescription(''); setNewServicePrice(0); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to add service'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to add service'); } finally { setUpdatingServices(false); }
   };
 
   const updateService = async () => {
     if (!editingService) return;
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingServices(true); setError(''); setSuccess('');
       const response = await apiService.updateBengkelService({
         services: [{ id: editingService, nama_service: editServiceData.nama_service.trim(), description: editServiceData.description.trim(), price: editServiceData.price, is_available: editServiceData.is_available }],
       });
       if (response.success) { setSuccess('Service updated!'); setEditingService(null); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to update service'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to update service'); } finally { setUpdatingServices(false); }
   };
 
   const deleteService = async (serviceId: number) => {
     if (!confirm('Are you sure you want to delete this service?')) return;
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingServices(true); setError(''); setSuccess('');
       const response = await apiService.deleteBengkelService(serviceId);
       if (response.success) { setSuccess('Service deleted!'); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to delete service'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to delete service'); } finally { setUpdatingServices(false); }
   };
 
   const startEditService = (service: BengkelService) => {
@@ -150,20 +161,29 @@ const BengkelManagementPage: React.FC = () => {
 
   const addAddress = async () => {
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingAddresses(true); setError(''); setSuccess('');
       const response = await apiService.addBengkelAddress(addressForm);
       if (response.success) { setSuccess('Address added!'); setAddressForm({ address_label: '', full_address: '', latitude: 0, longitude: 0, note: '' }); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to add address'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to add address'); } finally { setUpdatingAddresses(false); }
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     try {
-      setUpdating(true); setError(''); setSuccess('');
+      setUpdatingPhotos(true); setError(''); setSuccess('');
       const response = await apiService.uploadBengkelPhotos(files);
       if (response.success) { setSuccess(`${files.length} photo(s) uploaded!`); await loadBengkelProfile(); }
-    } catch (err) { handleApiError(err, 'Failed to upload photos'); } finally { setUpdating(false); }
+    } catch (err) { handleApiError(err, 'Failed to upload photos'); } finally { setUpdatingPhotos(false); }
+  };
+
+  const handleDeletePhoto = async (photoId: number) => {
+    if (!confirm('Are you sure you want to delete this photo?')) return;
+    try {
+      setDeletingPhotoId(photoId); setError(''); setSuccess('');
+      const response = await apiService.deleteBengkelPhoto(photoId);
+      if (response.success) { setSuccess('Photo deleted!'); await loadBengkelProfile(); }
+    } catch (err) { handleApiError(err, 'Failed to delete photo'); } finally { setDeletingPhotoId(null); }
   };
 
   const handleOperationalChange = (day: string, field: 'jam_buka' | 'jam_tutup' | 'enabled', value: string | boolean) => {
@@ -246,8 +266,8 @@ const BengkelManagementPage: React.FC = () => {
                   })}
                 </div>
               </div>
-              <button className="btn-primary w-full" onClick={createBengkel} disabled={updating || !profileForm.bengkel_name || !profileForm.bengkel_phone || createOperationalForm.operasionals.length === 0}>
-                {updating ? 'Creating...' : 'Create Bengkel'}
+              <button className="btn-primary w-full" onClick={createBengkel} disabled={updatingProfile || !profileForm.bengkel_name || !profileForm.bengkel_phone || createOperationalForm.operasionals.length === 0}>
+                {updatingProfile ? 'Creating...' : 'Create Bengkel'}
               </button>
             </div>
           </div>
@@ -269,22 +289,22 @@ const BengkelManagementPage: React.FC = () => {
       {success && <div className="mt-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-md">{success}</div>}
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <BengkelProfileForm profileForm={profileForm} updating={updating} onFormChange={(d) => setProfileForm((p) => ({ ...p, ...d }))} onSubmit={updateProfile} />
-        <ServiceOptionsForm serviceOptions={serviceOptions} updating={updating} onChange={setServiceOptions} onSubmit={updateServiceOptions} />
-        <OperationalHoursForm operationalHours={operationalHours} updating={updating} onDayChange={handleOperationalChange} onToggleDay={(day) => setOperationalHours((p) => p.filter((op) => op.hari !== day))} onSubmit={updateOperationalHours} />
-        <AddressManager addresses={bengkel?.addresses || []} addressForm={addressForm} updating={updating} onFormChange={(d) => setAddressForm((p) => ({ ...p, ...d }))} onSubmit={addAddress} />
+        <BengkelProfileForm profileForm={profileForm} updating={updatingProfile} onFormChange={(d) => setProfileForm((p) => ({ ...p, ...d }))} onSubmit={updateProfile} />
+        <ServiceOptionsForm serviceOptions={serviceOptions} updating={updatingServiceOptions} onChange={setServiceOptions} onSubmit={updateServiceOptions} />
+        <OperationalHoursForm operationalHours={operationalHours} updating={updatingOperationalHours} onDayChange={handleOperationalChange} onToggleDay={(day) => setOperationalHours((p) => p.filter((op) => op.hari !== day))} onSubmit={updateOperationalHours} />
+        <AddressManager addresses={bengkel?.addresses || []} addressForm={addressForm} updating={updatingAddresses} onFormChange={(d) => setAddressForm((p) => ({ ...p, ...d }))} onSubmit={addAddress} />
       </div>
 
       <ServiceManager
         services={bengkel?.services || []}
         newService={newService} newServiceDescription={newServiceDescription} newServicePrice={newServicePrice}
-        editingService={editingService} editServiceData={editServiceData} updating={updating}
+        editingService={editingService} editServiceData={editServiceData} updating={updatingServices}
         onNewServiceChange={(n, d, p) => { setNewService(n); setNewServiceDescription(d); setNewServicePrice(p); }}
         onAddService={addService} onStartEdit={startEditService} onCancelEdit={() => setEditingService(null)}
         onEditDataChange={(d) => setEditServiceData((p) => ({ ...p, ...d }))} onUpdateService={updateService} onDeleteService={deleteService}
       />
 
-      <PhotoManager photos={bengkel?.photos || []} onUpload={handlePhotoUpload} />
+      <PhotoManager photos={bengkel?.photos || []} onUpload={handlePhotoUpload} onDelete={handleDeletePhoto} deletingPhotoId={deletingPhotoId} uploading={updatingPhotos} />
     </div>
   );
 };

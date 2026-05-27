@@ -81,6 +81,7 @@ class ApiService extends ApiClient {
   uploadBengkelPhoto(file: File) { return bengkels.uploadBengkelPhoto(this.api, file); }
   uploadBengkelPhotos(files: File[]) { return bengkels.uploadBengkelPhotos(this.api, files); }
   uploadBengkelPhotosV2(files: File[]) { return bengkels.uploadBengkelPhotos(this.api, files); }
+  deleteBengkelPhoto(photoId: number) { return bengkels.deleteBengkelPhoto(this.api, photoId); }
   updateBengkelAvatar(file: File) { return bengkels.updateBengkelAvatar(this.api, file); }
   updateBengkelAvatarV2(file: File) { return bengkels.updateBengkelAvatar(this.api, file); }
   getAllBengkelsV2(page?: number, limit?: number) { return bengkels.getAllBengkelsV2(this.api, page, limit); }
